@@ -28,6 +28,7 @@ export const authOptions: AuthOptions = {
     }),
   ],
   session: { strategy: 'jwt' },
+  useSecureCookies: false,
   pages: {
     signIn: '/admin/login',
   },

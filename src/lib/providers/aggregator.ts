@@ -2,11 +2,13 @@ import prisma from '../db';
 import { AircraftProvider, ProviderStatus } from './types';
 import { SeedProvider } from './seed-provider';
 import { CharterExtractProvider } from './charter-extract-provider';
+import { WebScrapeProvider } from './web-scrape-provider';
 
 // Registry of all providers
 const providers: AircraftProvider[] = [
   new SeedProvider(),
   new CharterExtractProvider(),
+  new WebScrapeProvider(),
 ];
 
 export function getProviders(): AircraftProvider[] {
