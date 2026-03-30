@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { sendEmail, emailRequestReceived } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,6 +66,16 @@ export async function POST(request: NextRequest) {
         aircraft: { include: { type: true } },
       },
     });
+
+    // Send confirmation email
+    const emailContent = emailRequestReceived({
+      firstName,
+      departureCity,
+      arrivalCity,
+      departureDate,
+      requestId: tripRequest.id,
+    });
+    sendEmail({ to: email, ...emailContent }).catch(console.error);
 
     return NextResponse.json({
       id: tripRequest.id,
