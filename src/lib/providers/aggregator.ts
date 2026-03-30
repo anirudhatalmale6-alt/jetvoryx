@@ -3,12 +3,18 @@ import { AircraftProvider, ProviderStatus } from './types';
 import { SeedProvider } from './seed-provider';
 import { CharterExtractProvider } from './charter-extract-provider';
 import { WebScrapeProvider } from './web-scrape-provider';
+import { FlyAllianceProvider } from './flyalliance-provider';
+import { ClayLacyProvider } from './claylacy-provider';
+import { BoeingBBJProvider } from './boeing-bbj-provider';
 
 // Registry of all providers
 const providers: AircraftProvider[] = [
   new SeedProvider(),
   new CharterExtractProvider(),
   new WebScrapeProvider(),
+  new FlyAllianceProvider(),
+  new ClayLacyProvider(),
+  new BoeingBBJProvider(),
 ];
 
 export function getProviders(): AircraftProvider[] {

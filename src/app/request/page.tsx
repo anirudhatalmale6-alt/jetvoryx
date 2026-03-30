@@ -2,12 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plane, MapPin, Calendar, Users, User, Mail, Phone, MessageSquare } from 'lucide-react';
+import { Plane, Calendar, Users, User, Mail, Phone, MessageSquare } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
+import AirportSelect from '@/components/ui/AirportSelect';
 
 function RequestFormContent() {
   const router = useRouter();
@@ -161,21 +162,17 @@ function RequestFormContent() {
                 Trip Details
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  icon={MapPin}
+                <AirportSelect
                   label="Departure City *"
-                  type="text"
-                  placeholder="New York"
                   value={form.departureCity}
                   onChange={(v) => updateField('departureCity', v)}
+                  placeholder="Search departure airport..."
                 />
-                <FormField
-                  icon={MapPin}
+                <AirportSelect
                   label="Arrival City *"
-                  type="text"
-                  placeholder="Los Angeles"
                   value={form.arrivalCity}
                   onChange={(v) => updateField('arrivalCity', v)}
+                  placeholder="Search arrival airport..."
                 />
                 <FormField
                   icon={Calendar}

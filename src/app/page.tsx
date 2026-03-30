@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plane, Search, Shield, ArrowRight, Users, MapPin, Calendar } from 'lucide-react';
+import { Plane, Search, Shield, ArrowRight, Users, Calendar } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import AirportSelect from '@/components/ui/AirportSelect';
 import { formatCurrency } from '@/lib/utils';
 import type { Aircraft } from '@/types';
 
@@ -83,29 +84,19 @@ export default function HomePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <div>
                   <label className="block text-xs text-white/40 mb-1.5 uppercase tracking-wider">From</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold/60" />
-                    <input
-                      type="text"
-                      placeholder="Departure city"
-                      value={from}
-                      onChange={(e) => setFrom(e.target.value)}
-                      className="w-full bg-jet-dark/60 border border-white/5 rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-jet-muted focus:outline-none focus:border-gold/30 transition-colors"
-                    />
-                  </div>
+                  <AirportSelect
+                    value={from}
+                    onChange={(v) => setFrom(v)}
+                    placeholder="Departure city or airport"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-white/40 mb-1.5 uppercase tracking-wider">To</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold/60" />
-                    <input
-                      type="text"
-                      placeholder="Arrival city"
-                      value={to}
-                      onChange={(e) => setTo(e.target.value)}
-                      className="w-full bg-jet-dark/60 border border-white/5 rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-jet-muted focus:outline-none focus:border-gold/30 transition-colors"
-                    />
-                  </div>
+                  <AirportSelect
+                    value={to}
+                    onChange={(v) => setTo(v)}
+                    placeholder="Arrival city or airport"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-white/40 mb-1.5 uppercase tracking-wider">Date</label>
