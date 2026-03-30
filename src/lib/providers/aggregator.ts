@@ -6,6 +6,13 @@ import { WebScrapeProvider } from './web-scrape-provider';
 import { FlyAllianceProvider } from './flyalliance-provider';
 import { ClayLacyProvider } from './claylacy-provider';
 import { BoeingBBJProvider } from './boeing-bbj-provider';
+import { MercuryJetsProvider } from './mercuryjets-provider';
+import { VistaJetProvider } from './vistajet-provider';
+import { FlyXOProvider } from './flyxo-provider';
+import { GlobalJetProvider } from './globaljet-provider';
+import { AirCharterServiceProvider } from './aircharterservice-provider';
+import { JetSetGoProvider } from './jetsetgo-provider';
+import { AirXProvider } from './airx-provider';
 
 // Registry of all providers
 const providers: AircraftProvider[] = [
@@ -15,6 +22,13 @@ const providers: AircraftProvider[] = [
   new FlyAllianceProvider(),
   new ClayLacyProvider(),
   new BoeingBBJProvider(),
+  new MercuryJetsProvider(),
+  new VistaJetProvider(),
+  new FlyXOProvider(),
+  new GlobalJetProvider(),
+  new AirCharterServiceProvider(),
+  new JetSetGoProvider(),
+  new AirXProvider(),
 ];
 
 export function getProviders(): AircraftProvider[] {
