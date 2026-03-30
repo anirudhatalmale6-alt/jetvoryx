@@ -30,7 +30,7 @@ interface Request {
   estimatedPrice: number | null;
   status: string;
   createdAt: string;
-  aircraft: { name: string; heroImage: string; type: { name: string } } | null;
+  aircraft: { name: string; heroImage: string; sourceProvider: string; sourceId: string | null; type: { name: string } } | null;
   statusHistory: Array<{ id: string; status: string; note: string | null; createdAt: string }>;
   paymentLinks: Array<{ id: string; stripeUrl: string; amount: number; status: string; createdAt: string }>;
 }
@@ -177,7 +177,10 @@ export default function AdminRequests() {
                         {r.departureCity} &rarr; {r.arrivalCity}
                       </td>
                       <td className="py-3 px-4 text-jet-light text-xs">
-                        {r.aircraft?.name || '—'}
+                        <span>{r.aircraft?.name || '—'}</span>
+                        {r.aircraft?.sourceProvider && (
+                          <span className="block text-[10px] text-jet-muted">{r.aircraft.sourceProvider}</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-jet-light text-xs">
                         {formatDate(r.departureDate)}
@@ -278,7 +281,13 @@ export default function AdminRequests() {
                   {selected.returnDate && <InfoRow label="Return" value={formatDate(selected.returnDate)} />}
                   <InfoRow label="Passengers" value={selected.passengers.toString()} />
                   {selected.aircraft && (
-                    <InfoRow label="Aircraft" value={`${selected.aircraft.name} (${selected.aircraft.type.name})`} />
+                    <>
+                      <InfoRow label="Aircraft" value={`${selected.aircraft.name} (${selected.aircraft.type.name})`} />
+                      <InfoRow label="Source Provider" value={selected.aircraft.sourceProvider} />
+                      {selected.aircraft.sourceId && (
+                        <InfoRow label="Source ID" value={selected.aircraft.sourceId} />
+                      )}
+                    </>
                   )}
                   {selected.specialRequests && (
                     <InfoRow label="Special Requests" value={selected.specialRequests} />

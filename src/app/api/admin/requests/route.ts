@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     prisma.tripRequest.findMany({
       where,
       include: {
-        aircraft: { select: { name: true, heroImage: true, type: { select: { name: true } } } },
+        aircraft: { select: { name: true, heroImage: true, sourceProvider: true, sourceId: true, type: { select: { name: true } } } },
         statusHistory: { orderBy: { createdAt: 'desc' } },
         paymentLinks: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
