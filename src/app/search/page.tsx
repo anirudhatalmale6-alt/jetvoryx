@@ -61,6 +61,16 @@ function SearchContent() {
 
   const from = searchParams.get('from');
   const to = searchParams.get('to');
+  const date = searchParams.get('date');
+  const passengersParam = searchParams.get('passengers');
+
+  // Build trip query string to pass through to aircraft detail pages
+  const tripParams = new URLSearchParams();
+  if (from) tripParams.set('from', from);
+  if (to) tripParams.set('to', to);
+  if (date) tripParams.set('date', date);
+  if (passengersParam) tripParams.set('passengers', passengersParam);
+  const tripQuery = tripParams.toString();
 
   return (
     <div className="min-h-screen bg-jet-black">
@@ -241,7 +251,7 @@ function SearchContent() {
                   {aircraft.map((a) => (
                     <Link
                       key={a.id}
-                      href={`/aircraft/${a.slug}`}
+                      href={`/aircraft/${a.slug}${tripQuery ? `?${tripQuery}` : ''}`}
                       className="group glass-card rounded-xl overflow-hidden hover:border-gold/20 transition-all duration-300 hover:-translate-y-1"
                     >
                       <div className="relative h-52 overflow-hidden">

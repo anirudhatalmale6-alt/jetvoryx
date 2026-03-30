@@ -25,11 +25,11 @@ function RequestFormContent() {
     lastName: '',
     email: '',
     phone: '',
-    departureCity: '',
-    arrivalCity: '',
-    departureDate: '',
+    departureCity: searchParams.get('from') || '',
+    arrivalCity: searchParams.get('to') || '',
+    departureDate: searchParams.get('date') || '',
     returnDate: '',
-    passengers: '1',
+    passengers: searchParams.get('passengers') || '1',
     specialRequests: '',
   });
 

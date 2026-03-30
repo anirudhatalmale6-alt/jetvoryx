@@ -223,8 +223,10 @@ export class FlyXOProvider implements AircraftProvider {
     }
 
     const pageContent = fleetData.props.pageProps.pageContent;
-    const fleetExploration: any[] = pageContent.fleetExploration || [];
-    const mostRequested: any[] = pageContent.mostRequestedFleet || [];
+    const fleetExplorationRaw = pageContent.fleetExploration || {};
+    const fleetExploration: any[] = fleetExplorationRaw.items || fleetExplorationRaw || [];
+    const mostRequestedRaw = pageContent.mostRequestedFleet || {};
+    const mostRequested: any[] = mostRequestedRaw.items || mostRequestedRaw || [];
 
     // Build category lookup with speed data
     const categories: FleetCategory[] = [];

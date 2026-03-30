@@ -29,14 +29,22 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const buildSearchParams = () => {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     if (date) params.set('date', date);
     if (passengers) params.set('passengers', passengers);
-    router.push(`/search?${params.toString()}`);
+    return params.toString();
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    router.push(`/search?${buildSearchParams()}`);
+  };
+
+  const handleRequestFlight = () => {
+    router.push(`/request?${buildSearchParams()}`);
   };
 
   return (
@@ -127,10 +135,16 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" size="lg" className="w-full sm:w-auto">
-                <Search className="h-4 w-4 mr-2" />
-                Search Fleet
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button type="submit" size="lg" className="w-full sm:w-auto">
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Fleet
+                </Button>
+                <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" onClick={handleRequestFlight}>
+                  <Plane className="h-4 w-4 mr-2" />
+                  Request a Flight
+                </Button>
+              </div>
             </form>
           </div>
         </div>

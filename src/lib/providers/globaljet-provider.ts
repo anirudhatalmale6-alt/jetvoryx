@@ -267,47 +267,92 @@ export class GlobalJetProvider implements AircraftProvider {
     const entries: ListingEntry[] = [];
     const seenPaths = new Set<string>();
 
-    for (let page = 0; page < TOTAL_PAGES; page++) {
+    // GlobalJet lists all aircraft on the main charter page as <a> links
+    // Aircraft links follow pattern: /en/{manufacturer-model-registration}
+    try {
+      await delay(RATE_LIMIT_MS);
+      const html = await fetchPage(FLEET_URL);
+      const $ = cheerio.load(html);
+
+      // Find all aircraft detail page links
+      // They match pattern: /en/{words}-{reg} where reg is like f-hbdx, lx-and, ec-lae
+      $('a[href]').each((_, el) => {
+        const href = $(el).attr('href') || '';
+        const path = href.startsWith('http') ? new URL(href).pathname : href;
+
+        // Must start with /en/ and have enough segments to be an aircraft
+        if (!path.startsWith('/en/') || path === '/en/charter') return;
+
+        const slug = path.replace('/en/', '').replace(/\/$/, '');
+        // Aircraft slugs have hyphens and contain aircraft model keywords
+        if (slug.split('-').length < 3) return;
+        // Skip known non-aircraft pages
+        if (['brokerage', 'contact', 'sales', 'management', 'design', 'careers',
+             'sustainability', 'news', 'destinations', 'legal', 'copyrights',
+             'terms', 'privacy', 'charter'].some(skip => slug === skip || slug.startsWith(skip + '-'))) return;
+
+        if (seenPaths.has(path)) return;
+        seenPaths.add(path);
+
+        // Derive name and registration from slug
+        // Format: embraer-phenom-300-f-hbdx or bombardier-challenger-350-lx-gjm
+        const parts = slug.split('-');
+
+        // Find registration break: 1-2 char country prefix followed by remaining
+        let regIdx = -1;
+        for (let i = parts.length - 1; i >= 2; i--) {
+          if (parts[i - 1].length <= 2 && /^[a-z\d]+$/i.test(parts[i - 1])) {
+            regIdx = i - 1;
+            break;
+          }
+        }
+
+        let aircraftName: string;
+        let registration: string;
+        if (regIdx > 0) {
+          aircraftName = parts.slice(0, regIdx).map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+          registration = parts.slice(regIdx).join('-').toUpperCase();
+        } else {
+          aircraftName = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+          registration = '';
+        }
+
+        entries.push({
+          name: aircraftName,
+          registration,
+          detailPath: path,
+          pax: 0,
+          range: 0,
+        });
+      });
+
+      console.log(`[GlobalJet] Found ${entries.length} aircraft links on charter page`);
+    } catch (err) {
+      console.error(`[GlobalJet] Failed to scrape charter page:`, err);
+    }
+
+    // Also try paginated pages
+    for (let page = 1; page < TOTAL_PAGES; page++) {
       try {
-        const url = page === 0 ? FLEET_URL : `${FLEET_URL}?page=${page}`;
         await delay(RATE_LIMIT_MS);
-        const html = await fetchPage(url);
+        const html = await fetchPage(`${FLEET_URL}?page=${page}`);
         const $ = cheerio.load(html);
 
-        // Each aircraft card is inside a swiper-slide. Cards contain:
-        // - an <a> link to the detail page (/en/{slug})
-        // - text with model name, registration, pax count, range
-        $('.swiper-slide').each((_, slide) => {
-          const $slide = $(slide);
-          const text = $slide.text();
+        $('a[href]').each((_, el) => {
+          const href = $(el).attr('href') || '';
+          const path = href.startsWith('http') ? new URL(href).pathname : href;
+          if (!path.startsWith('/en/') || path === '/en/charter') return;
+          const slug = path.replace('/en/', '').replace(/\/$/, '');
+          if (slug.split('-').length < 3) return;
+          if (['brokerage', 'contact', 'sales', 'management', 'design', 'careers',
+               'sustainability', 'news', 'destinations', 'legal', 'copyrights',
+               'terms', 'privacy', 'charter'].some(skip => slug === skip || slug.startsWith(skip + '-'))) return;
+          if (seenPaths.has(path)) return;
+          seenPaths.add(path);
 
-          // Find detail page link (matches /en/{model-slug})
-          let detailPath = '';
-          $slide.find('a[href]').each((_, a) => {
-            const href = $(a).attr('href') || '';
-            if (href.startsWith('/en/') && href !== '/en/charter' && !href.includes('#')) {
-              detailPath = href;
-            }
-          });
-
-          if (!detailPath || seenPaths.has(detailPath)) return;
-
-          // Extract pax and range from card text
-          const paxMatch = text.match(/(\d+)\s*pax/i);
-          const rangeMatch = text.match(/([\d,]+)\s*(?:nm|Nm)/);
-          const pax = paxMatch ? parseInt(paxMatch[1], 10) : 0;
-          const range = rangeMatch ? parseNumber(rangeMatch[1]) : 0;
-
-          // Derive name and registration from the URL slug
-          // Slug format: /en/embraer-phenom-300-f-hbdx
-          const slug = detailPath.replace('/en/', '').replace(/\/$/, '');
           const parts = slug.split('-');
-
-          // Registration is typically the last 2-3 hyphenated parts (e.g., f-hbdx, lx-evm, p4-mlo)
-          // Look for the registration break: a single letter followed by remaining parts
           let regIdx = -1;
           for (let i = parts.length - 1; i >= 2; i--) {
-            // Registrations often start with a 1-2 char country prefix (f, lx, p4, g, etc.)
             if (parts[i - 1].length <= 2 && /^[a-z\d]+$/i.test(parts[i - 1])) {
               regIdx = i - 1;
               break;
@@ -324,13 +369,12 @@ export class GlobalJetProvider implements AircraftProvider {
             registration = '';
           }
 
-          seenPaths.add(detailPath);
           entries.push({
             name: aircraftName,
             registration,
-            detailPath,
-            pax,
-            range,
+            detailPath: path,
+            pax: 0,
+            range: 0,
           });
         });
 

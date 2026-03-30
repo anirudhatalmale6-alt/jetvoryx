@@ -132,40 +132,34 @@ export class VistaJetProvider implements AircraftProvider {
         const $ = cheerio.load(html);
 
         // Extract name from h1 or URL
-        let name = $('h1').first().text().trim();
+        let name = $('h1').first().text().trim()
+          .replace(/\s*private jet\s*/gi, '')
+          .replace(/\s*business jet\s*/gi, '')
+          .trim();
         if (!name || name.length < 3) {
           // Parse from URL: /en/private-jets/bombardier/global-7500/
           const parts = url.split('/').filter(Boolean);
           name = parts[parts.length - 1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         }
 
-        // Extract specs from dl/dt/dd structure
-        const specs: Record<string, string> = {};
-        $('dt').each((_, dt) => {
-          const label = $(dt).text().trim().toLowerCase();
-          const value = $(dt).next('dd').text().trim();
-          if (label && value) {
-            specs[label] = value;
-          }
-        });
+        // Extract specs from body text (SSR doesn't render dt/dd, specs are in text)
+        const bodyText = $('body').text();
 
-        // Parse specs
-        const paxText = specs['passengers'] || specs['seating'] || '';
-        const pax = paxText ? parseInt(paxText, 10) || 0 : 0;
+        const paxMatch = bodyText.match(/(\d+)\s*(?:passengers|seats)/i);
+        const pax = paxMatch ? parseInt(paxMatch[1], 10) : 0;
 
-        const rangeText = specs['max range'] || specs['range'] || '';
-        const rangeMatch = rangeText.match(/([\d,]+)\s*nm/i);
+        const rangeMatch = bodyText.match(/([\d,]+)\s*nm/i);
         const range = rangeMatch ? parseNumber(rangeMatch[1]) : 0;
 
-        const cabinHText = specs['cabin height'] || '';
-        const cabinWText = specs['cabin width'] || '';
-        const cabinLText = specs['cabin length'] || '';
-        const baggageText = specs['baggage capacity'] || specs['baggage'] || '';
+        const cabinHMatch = bodyText.match(/cabin height[:\s]*([\d]+\s*ft\s*\d*\s*(?:in)?)/i);
+        const cabinWMatch = bodyText.match(/cabin width[:\s]*([\d]+\s*ft\s*\d*\s*(?:in)?)/i);
+        const cabinLMatch = bodyText.match(/cabin length[:\s]*([\d]+\s*ft\s*\d*\s*(?:in)?)/i);
+        const baggageMatch = bodyText.match(/([\d]+)\s*ft[³3]/i);
 
-        const cabinH = parseFeetInches(cabinHText);
-        const cabinW = parseFeetInches(cabinWText);
-        const cabinL = parseFeetInches(cabinLText);
-        const baggage = baggageText ? parseNumber(baggageText.match(/(\d+)\s*ft/i)?.[1] || '0') : 0;
+        const cabinH = cabinHMatch ? parseFeetInches(cabinHMatch[1]) : 0;
+        const cabinW = cabinWMatch ? parseFeetInches(cabinWMatch[1]) : 0;
+        const cabinL = cabinLMatch ? parseFeetInches(cabinLMatch[1]) : 0;
+        const baggage = baggageMatch ? parseNumber(baggageMatch[1]) : 0;
 
         if (pax === 0 && range === 0) {
           console.log(`[VistaJet] Skipping ${name} - no specs found`);

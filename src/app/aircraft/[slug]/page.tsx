@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   Users, Navigation, Gauge, Ruler, Package, Wifi, ChefHat,
   Armchair, Plug, Snowflake, Tv, Phone, Bed, ShowerHead,
@@ -30,10 +30,23 @@ const amenityIcons: Record<string, typeof Wifi> = {
 
 export default function AircraftDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const [aircraft, setAircraft] = useState<Aircraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Carry trip params from search page through to request form
+  const tripParams = new URLSearchParams();
+  const fromParam = searchParams.get('from');
+  const toParam = searchParams.get('to');
+  const dateParam = searchParams.get('date');
+  const passengersParam = searchParams.get('passengers');
+  if (fromParam) tripParams.set('from', fromParam);
+  if (toParam) tripParams.set('to', toParam);
+  if (dateParam) tripParams.set('date', dateParam);
+  if (passengersParam) tripParams.set('passengers', passengersParam);
+  const tripQuery = tripParams.toString();
 
   useEffect(() => {
     if (params.slug) {
@@ -203,7 +216,7 @@ export default function AircraftDetailPage() {
                   </div>
                 </div>
 
-                <Link href={`/request?aircraft=${aircraft.slug}&aircraftId=${aircraft.id}`}>
+                <Link href={`/request?aircraft=${aircraft.slug}&aircraftId=${aircraft.id}${tripQuery ? `&${tripQuery}` : ''}`}>
                   <Button size="lg" className="w-full mb-3">
                     Request This Aircraft <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>

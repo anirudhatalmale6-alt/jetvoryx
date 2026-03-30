@@ -184,20 +184,17 @@ interface DetailSpecs {
   yearRefurbished: string | null;
 }
 
-/** Extract the fleet list JSON from the Next.js SSR page source */
+/** Extract the fleet list JSON from the Next.js RSC/SSR page source */
 function extractFleetJson(html: string): FleetListItem[] {
   // Try __NEXT_DATA__ script tag first
   const nextDataMatch = html.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
   if (nextDataMatch) {
     try {
       const nextData = JSON.parse(nextDataMatch[1]);
-      // Navigate the Next.js data tree to find fleet data
       const pageProps = nextData?.props?.pageProps;
       if (pageProps) {
-        // Look for fleet/aircraft arrays in pageProps
         const fleets = pageProps.fleets || pageProps.aircraft || pageProps.data || pageProps.initialData;
         if (Array.isArray(fleets)) return fleets;
-        // Check nested keys
         for (const key of Object.keys(pageProps)) {
           if (Array.isArray(pageProps[key]) && pageProps[key].length > 0 && pageProps[key][0]?.name) {
             return pageProps[key];
@@ -205,32 +202,64 @@ function extractFleetJson(html: string): FleetListItem[] {
         }
       }
     } catch {
-      // Fall through to other extraction methods
+      // Fall through
     }
   }
 
-  // Try finding initialData or fleet data in any script tag
-  const scriptBlocks = html.match(/<script[^>]*>([\s\S]*?)<\/script>/g) || [];
-  for (const block of scriptBlocks) {
-    const content = block.replace(/<\/?script[^>]*>/g, '');
-
-    // Look for JSON arrays containing aircraft objects
-    const jsonArrayMatch = content.match(/\[(\{[^}]*"name"[^}]*"category"[^}]*\}(?:,\s*\{[^}]*\})*)\]/);
-    if (jsonArrayMatch) {
-      try {
-        return JSON.parse(jsonArrayMatch[0]);
-      } catch {
-        // Continue searching
-      }
+  // Next.js RSC streaming format: self.__next_f.push() calls with escaped JSON
+  // Look for "initialData":[...] pattern in the raw HTML (may be escaped)
+  // First try unescaped
+  const initMatch = html.match(/"initialData"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+  if (initMatch) {
+    try {
+      return JSON.parse(initMatch[1]);
+    } catch {
+      // May be double-escaped
     }
+  }
 
-    // Look for initialData assignment
-    const initDataMatch = content.match(/initialData["\s]*[:=]\s*(\[[\s\S]*?\])\s*[;,]/);
-    if (initDataMatch) {
-      try {
-        return JSON.parse(initDataMatch[1]);
-      } catch {
-        // Continue
+  // Try with escaped quotes (RSC format uses \" inside string payloads)
+  const escapedMatch = html.match(/\\"initialData\\":\s*(\[[\s\S]*?\])\s*[,\\}]/);
+  if (escapedMatch) {
+    try {
+      // Unescape the JSON string
+      const unescaped = escapedMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      return JSON.parse(unescaped);
+    } catch {
+      // Fall through
+    }
+  }
+
+  // Broader approach: find any JSON array with aircraft-like objects in the full HTML
+  // Match pattern: [{"id":NNN,"name":"...","category":"...
+  const broadMatch = html.match(/\[\s*\{\s*(?:\\?")id(?:\\?"):\s*\d+\s*,\s*(?:\\?")name(?:\\?")/);
+  if (broadMatch) {
+    // Find the start index and extract the full array
+    const startIdx = html.indexOf(broadMatch[0]);
+    if (startIdx >= 0) {
+      // Walk forward to find matching bracket
+      let depth = 0;
+      let endIdx = startIdx;
+      for (let i = startIdx; i < html.length && i < startIdx + 50000; i++) {
+        if (html[i] === '[') depth++;
+        else if (html[i] === ']') {
+          depth--;
+          if (depth === 0) { endIdx = i + 1; break; }
+        }
+      }
+      if (endIdx > startIdx) {
+        let jsonStr = html.substring(startIdx, endIdx);
+        // Try parsing as-is first, then try unescaping
+        try {
+          return JSON.parse(jsonStr);
+        } catch {
+          try {
+            jsonStr = jsonStr.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            return JSON.parse(jsonStr);
+          } catch {
+            // Fall through
+          }
+        }
       }
     }
   }
