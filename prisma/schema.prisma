@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AircraftType {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  aircraft    Aircraft[]
+  markupRules MarkupRule[]
+  createdAt   DateTime   @default(now())
+}
+
+model Aircraft {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  typeId          String
+  type            AircraftType @relation(fields: [typeId], references: [id])
+  manufacturer    String
+  yearMin         Int?
+  yearMax         Int?
+  maxPassengers   Int
+  maxRange        Int
+  cruiseSpeed     Int
+  cabinHeight     Float?
+  cabinWidth      Float?
+  cabinLength     Float?
+  baggageVolume   Float?
+  basePricePerHour Float
+  heroImage       String
+  images          String[]
+  description     String?
+  amenities       String[]
+  sourceProvider  String
+  sourceId        String?
+  active          Boolean      @default(true)
+  featured        Boolean      @default(false)
+  requests        TripRequest[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([typeId])
+  @@index([active, featured])
+  @@index([maxPassengers])
+}
+
+model MarkupRule {
+  id           String        @id @default(cuid())
+  name         String
+  typeId       String?
+  type         AircraftType? @relation(fields: [typeId], references: [id])
+  aircraftSlug String?
+  markupType   String
+  markupValue  Float
+  priority     Int           @default(0)
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+}
+
+model TripRequest {
+  id              String        @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String
+  phone           String?
+  departureCity   String
+  arrivalCity     String
+  departureDate   DateTime
+  returnDate      DateTime?
+  passengers      Int
+  aircraftId      String?
+  aircraft        Aircraft?     @relation(fields: [aircraftId], references: [id])
+  specialRequests String?
+  estimatedPrice  Float?
+  status          String        @default("pending")
+  statusHistory   StatusEvent[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([email])
+  @@index([status])
+}
+
+model StatusEvent {
+  id        String      @id @default(cuid())
+  requestId String
+  request   TripRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  status    String
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([requestId])
+}
