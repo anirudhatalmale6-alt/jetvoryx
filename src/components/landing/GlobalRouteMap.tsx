@@ -1,31 +1,31 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface City {
   name: string;
   code: string;
-  x: number;
-  y: number;
+  lat: number;
+  lng: number;
 }
 
 const cities: City[] = [
-  { name: 'New York', code: 'JFK', x: 27.5, y: 37 },
-  { name: 'London', code: 'LHR', x: 47, y: 28 },
-  { name: 'Paris', code: 'CDG', x: 48.5, y: 31 },
-  { name: 'Dubai', code: 'DXB', x: 60, y: 40 },
-  { name: 'Singapore', code: 'SIN', x: 73, y: 55 },
-  { name: 'Hong Kong', code: 'HKG', x: 76, y: 41 },
-  { name: 'Tokyo', code: 'NRT', x: 82, y: 35 },
-  { name: 'Sydney', code: 'SYD', x: 85, y: 71 },
-  { name: 'São Paulo', code: 'GRU', x: 32, y: 63 },
-  { name: 'Los Angeles', code: 'LAX', x: 13, y: 37 },
-  { name: 'Miami', code: 'MIA', x: 24, y: 43 },
-  { name: 'Cape Town', code: 'CPT', x: 52, y: 71 },
-  { name: 'Moscow', code: 'SVO', x: 58, y: 25 },
-  { name: 'Mumbai', code: 'BOM', x: 65, y: 45 },
-  { name: 'Geneva', code: 'GVA', x: 49, y: 30.5 },
-  { name: 'Jeddah', code: 'JED', x: 56, y: 42 },
+  { name: 'New York', code: 'JFK', lat: 40.64, lng: -73.78 },
+  { name: 'London', code: 'LHR', lat: 51.47, lng: -0.46 },
+  { name: 'Paris', code: 'CDG', lat: 49.01, lng: 2.55 },
+  { name: 'Dubai', code: 'DXB', lat: 25.25, lng: 55.36 },
+  { name: 'Singapore', code: 'SIN', lat: 1.35, lng: 103.99 },
+  { name: 'Hong Kong', code: 'HKG', lat: 22.31, lng: 113.91 },
+  { name: 'Tokyo', code: 'NRT', lat: 35.76, lng: 140.39 },
+  { name: 'Sydney', code: 'SYD', lat: -33.95, lng: 151.18 },
+  { name: 'São Paulo', code: 'GRU', lat: -23.43, lng: -46.47 },
+  { name: 'Los Angeles', code: 'LAX', lat: 33.94, lng: -118.41 },
+  { name: 'Miami', code: 'MIA', lat: 25.80, lng: -80.29 },
+  { name: 'Cape Town', code: 'CPT', lat: -33.96, lng: 18.60 },
+  { name: 'Moscow', code: 'SVO', lat: 55.97, lng: 37.41 },
+  { name: 'Mumbai', code: 'BOM', lat: 19.09, lng: 72.87 },
+  { name: 'Geneva', code: 'GVA', lat: 46.24, lng: 6.11 },
+  { name: 'Jeddah', code: 'JED', lat: 21.68, lng: 39.16 },
 ];
 
 const routes: [number, number][] = [
@@ -43,176 +43,243 @@ const routes: [number, number][] = [
   [14, 3],
 ];
 
-function arcPath(x1: number, y1: number, x2: number, y2: number): string {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const bulge = Math.min(dist * 0.25, 8);
-  const mx = (x1 + x2) / 2 - (dy / dist) * bulge;
-  const my = (y1 + y2) / 2 + (dx / dist) * bulge;
-  return `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`;
+// Mercator projection
+function project(lat: number, lng: number): [number, number] {
+  const x = (lng + 180) * (1000 / 360);
+  const latRad = (lat * Math.PI) / 180;
+  const mercN = Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+  const y = 500 / 2 - (500 * mercN) / (2 * Math.PI);
+  return [x, y];
 }
 
-// More detailed world map paths (simplified but better looking)
-const continentPaths = {
-  northAmerica: 'M5,22 L8,18 L12,15 L16,14 L20,15 L23,17 L26,20 L28,24 L30,28 L29,32 L27,36 L28,40 L27,44 L24,46 L20,45 L18,42 L16,38 L14,36 L12,38 L10,36 L8,32 L7,28 L6,25 Z M15,16 L18,14 L22,14 L25,15 L23,17 L19,16 Z',
-  southAmerica: 'M24,48 L27,46 L30,47 L33,49 L35,53 L36,58 L35,63 L34,67 L32,71 L30,73 L28,71 L26,66 L25,60 L24,55 L23,51 Z',
-  europe: 'M44,16 L46,14 L49,14 L52,15 L55,17 L57,20 L56,23 L54,26 L52,29 L50,31 L48,30 L46,28 L44,25 L43,21 Z M50,14 L53,13 L56,15 Z',
-  africa: 'M44,33 L47,31 L51,33 L54,36 L57,40 L58,46 L57,52 L55,58 L53,63 L51,68 L49,72 L47,71 L45,66 L43,60 L41,52 L42,46 L43,40 Z',
-  asia: 'M57,14 L62,12 L68,12 L74,14 L79,17 L83,20 L85,24 L84,28 L82,32 L78,36 L74,38 L70,40 L66,42 L62,40 L59,36 L57,30 L55,24 L56,18 Z',
-  middleEast: 'M55,31 L59,29 L63,31 L65,35 L64,39 L61,42 L58,40 L56,36 Z',
-  india: 'M63,38 L67,36 L70,39 L69,44 L67,49 L65,48 L63,44 Z',
-  seAsia: 'M72,40 L75,38 L78,40 L77,46 L75,50 L73,48 L71,44 Z',
-  australia: 'M78,58 L82,56 L87,57 L90,60 L90,65 L88,69 L85,72 L81,71 L79,67 L77,62 Z',
-  japan: 'M82,28 L84,26 L85,28 L84,33 L83,35 L82,32 Z',
-  greenland: 'M30,8 L34,6 L38,7 L40,10 L38,14 L34,15 L31,13 L29,10 Z',
-};
-
 export default function GlobalRouteMap() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const animProgress = useRef(0);
+  const animFrame = useRef(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     );
-    if (ref.current) observer.observe(ref.current);
+    if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Scale and offset for the map
+    const mapScale = w / 1000;
+    const mapOffsetY = -40 * mapScale;
+
+    const proj = (lat: number, lng: number): [number, number] => {
+      const [px, py] = project(lat, lng);
+      return [px * mapScale, py * mapScale + mapOffsetY];
+    };
+
+    // Draw grid
+    ctx.strokeStyle = 'rgba(138, 164, 190, 0.04)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 36; i++) {
+      const x = (i / 36) * w;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let i = 0; i <= 18; i++) {
+      const y = (i / 18) * h;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // Draw world land masses using dot matrix style
+    const landCoords = [
+      // North America outline
+      ...[[-10, 60], [-20, 55], [-30, 50], [-40, 48], [-55, 47], [-65, 43], [-70, 40], [-75, 38], [-80, 35], [-82, 30], [-85, 28], [-90, 30], [-95, 30], [-100, 32], [-105, 35], [-110, 32], [-115, 34], [-118, 38], [-122, 40], [-125, 44], [-125, 48], [-130, 55], [-140, 60], [-150, 60], [-160, 62], [-165, 65], [-160, 70], [-140, 72], [-120, 70], [-100, 68], [-80, 65], [-65, 60], [-55, 50], [-40, 48]].map(([lng, lat]) => ({ lat, lng })),
+      // Europe
+      ...[[-10, 52], [0, 51], [5, 52], [10, 55], [15, 55], [20, 54], [25, 55], [30, 60], [35, 58], [30, 50], [25, 47], [20, 45], [15, 45], [10, 44], [5, 46], [0, 48], [-5, 48], [-10, 44]].map(([lng, lat]) => ({ lat, lng })),
+      // Africa
+      ...[[-15, 30], [-5, 35], [10, 37], [15, 33], [25, 32], [30, 30], [33, 28], [35, 22], [40, 12], [42, 5], [40, -2], [35, -10], [30, -20], [25, -30], [20, -35], [15, -30], [12, -20], [10, -5], [5, 5], [0, 5], [-5, 10], [-15, 15], [-17, 20], [-15, 25]].map(([lng, lat]) => ({ lat, lng })),
+      // Asia
+      ...[[35, 35], [40, 38], [45, 40], [50, 38], [55, 35], [60, 30], [65, 25], [70, 20], [75, 15], [80, 10], [85, 15], [90, 22], [95, 18], [100, 15], [105, 10], [108, 15], [110, 20], [115, 22], [120, 25], [125, 30], [130, 35], [135, 38], [140, 40], [142, 45], [140, 50], [135, 55], [120, 55], [100, 55], [85, 55], [75, 52], [65, 48], [55, 45], [45, 42], [40, 40]].map(([lng, lat]) => ({ lat, lng })),
+      // South America
+      ...[[-80, 10], [-75, 5], [-70, -5], [-65, -15], [-60, -20], [-55, -25], [-50, -25], [-45, -23], [-40, -15], [-38, -10], [-35, -5], [-50, 5], [-60, 8], [-70, 10], [-75, 12]].map(([lng, lat]) => ({ lat, lng })),
+      // Australia
+      ...[[115, -15], [120, -15], [130, -15], [140, -18], [150, -25], [153, -28], [150, -35], [140, -38], [130, -35], [120, -30], [115, -25], [115, -20]].map(([lng, lat]) => ({ lat, lng })),
+    ];
+
+    // Draw dots for land masses
+    ctx.fillStyle = 'rgba(138, 164, 190, 0.08)';
+    const dotSpacing = Math.max(8, 12 * mapScale);
+    for (let x = 0; x < w; x += dotSpacing) {
+      for (let y = 0; y < h; y += dotSpacing) {
+        // Convert screen coords back to lat/lng
+        const lng = (x / mapScale) * 360 / 1000 - 180;
+        const mercY = ((500 / 2 - (y - mapOffsetY) / mapScale) * 2 * Math.PI) / 500;
+        const lat = (2 * Math.atan(Math.exp(mercY)) - Math.PI / 2) * 180 / Math.PI;
+
+        // Simple point-in-region check
+        let isLand = false;
+        for (const coord of landCoords) {
+          const dist = Math.sqrt(Math.pow(lat - coord.lat, 2) + Math.pow(lng - coord.lng, 2));
+          if (dist < 8) {
+            isLand = true;
+            break;
+          }
+        }
+        if (isLand) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Animated progress
+    const progress = animProgress.current;
+
+    // Draw routes
+    routes.forEach(([a, b], i) => {
+      const routeProgress = Math.max(0, Math.min(1, (progress - i * 0.02) / 0.6));
+      if (routeProgress <= 0) return;
+
+      const [x1, y1] = proj(cities[a].lat, cities[a].lng);
+      const [x2, y2] = proj(cities[b].lat, cities[b].lng);
+
+      const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+      gradient.addColorStop(0, 'rgba(201, 168, 76, 0.15)');
+      gradient.addColorStop(0.5, 'rgba(212, 175, 55, 0.35)');
+      gradient.addColorStop(1, 'rgba(201, 168, 76, 0.15)');
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+
+      // Draw arc
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const bulge = Math.min(dist * 0.2, 40);
+      const mx = (x1 + x2) / 2 - (dy / dist) * bulge;
+      const my = (y1 + y2) / 2 + (dx / dist) * bulge;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+
+      // Partial draw based on progress
+      const steps = 50;
+      const drawSteps = Math.floor(steps * routeProgress);
+      for (let s = 1; s <= drawSteps; s++) {
+        const t = s / steps;
+        const px = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * mx + t * t * x2;
+        const py = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * my + t * t * y2;
+        ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    });
+
+    // Draw city markers
+    cities.forEach((city, i) => {
+      const cityProgress = Math.max(0, Math.min(1, (progress - 0.2) / 0.5));
+      if (cityProgress <= 0) return;
+
+      const [cx, cy] = proj(city.lat, city.lng);
+
+      // Glow
+      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 8 * cityProgress);
+      grd.addColorStop(0, `rgba(212, 175, 55, ${0.3 * cityProgress})`);
+      grd.addColorStop(1, 'rgba(212, 175, 55, 0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8 * cityProgress, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pulse ring
+      ctx.strokeStyle = `rgba(201, 168, 76, ${0.2 * cityProgress})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5 + Math.sin(Date.now() / 800 + i) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Dot
+      ctx.fillStyle = `rgba(212, 175, 55, ${cityProgress})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Code label
+      ctx.font = `bold ${Math.max(9, 11 * mapScale)}px Inter, system-ui, sans-serif`;
+      ctx.fillStyle = `rgba(201, 168, 76, ${0.9 * cityProgress})`;
+      ctx.textAlign = 'center';
+      ctx.fillText(city.code, cx, cy - 10);
+
+      // City name
+      ctx.font = `${Math.max(7, 9 * mapScale)}px Inter, system-ui, sans-serif`;
+      ctx.fillStyle = `rgba(138, 164, 190, ${0.5 * cityProgress})`;
+      ctx.fillText(city.name, cx, cy + 16);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const startTime = Date.now();
+    const duration = 3000;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      animProgress.current = Math.min(1, elapsed / duration);
+      draw();
+      if (animProgress.current < 1) {
+        animFrame.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animFrame.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrame.current);
+  }, [visible, draw]);
+
+  // Resize handler
+  useEffect(() => {
+    const handleResize = () => {
+      if (visible) draw();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [visible, draw]);
+
   return (
-    <div ref={ref} className="relative w-full max-w-6xl mx-auto">
-      {/* Outer glow */}
-      <div className="absolute inset-0 rounded-2xl" style={{ background: 'radial-gradient(ellipse at center, rgba(201,168,76,0.03) 0%, transparent 70%)' }} />
-
-      <svg
-        viewBox="0 0 100 80"
-        className="w-full h-auto"
-        style={{ filter: 'drop-shadow(0 0 30px rgba(201, 168, 76, 0.04))' }}
-      >
-        <defs>
-          <linearGradient id="routeGold" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#c9a84c" stopOpacity="0.3" />
-            <stop offset="50%" stopColor="#d4af37" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#c9a84c" stopOpacity="0.3" />
-          </linearGradient>
-          <radialGradient id="cityGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#d4af37" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#c9a84c" stopOpacity="0" />
-          </radialGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="0.4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          {/* Grid pattern */}
-          <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
-            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(138,164,190,0.03)" strokeWidth="0.1" />
-          </pattern>
-        </defs>
-
-        {/* Grid background */}
-        <rect width="100" height="80" fill="url(#grid)" />
-
-        {/* Continent shapes */}
-        <g>
-          {Object.values(continentPaths).map((d, i) => (
-            <path
-              key={i}
-              d={d}
-              fill="rgba(138,164,190,0.06)"
-              stroke="rgba(138,164,190,0.08)"
-              strokeWidth="0.15"
-              opacity={visible ? 1 : 0}
-              style={{ transition: `opacity 1s ease ${i * 0.05}s` }}
-            />
-          ))}
-        </g>
-
-        {/* Route lines */}
-        <g>
-          {routes.map(([a, b], i) => {
-            const c1 = cities[a];
-            const c2 = cities[b];
-            const d = arcPath(c1.x, c1.y, c2.x, c2.y);
-            const len = Math.sqrt(Math.pow(c2.x - c1.x, 2) + Math.pow(c2.y - c1.y, 2)) * 3;
-            return (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="url(#routeGold)"
-                strokeWidth="0.12"
-                strokeLinecap="round"
-                opacity={visible ? 0.6 : 0}
-                strokeDasharray={len}
-                strokeDashoffset={visible ? 0 : len}
-                style={{
-                  transition: `opacity 0.6s ease ${i * 0.06}s, stroke-dashoffset 1.5s ease ${i * 0.06}s`,
-                }}
-              />
-            );
-          })}
-        </g>
-
-        {/* City markers */}
-        {cities.map((city, i) => (
-          <g
-            key={i}
-            opacity={visible ? 1 : 0}
-            style={{ transition: `opacity 0.5s ease ${i * 0.08 + 0.5}s` }}
-          >
-            {/* Pulse ring */}
-            <circle
-              cx={city.x}
-              cy={city.y}
-              r="1.5"
-              fill="none"
-              stroke="rgba(201,168,76,0.2)"
-              strokeWidth="0.08"
-              className={visible ? 'animate-pulse' : ''}
-            />
-            {/* Glow */}
-            <circle cx={city.x} cy={city.y} r="1" fill="url(#cityGlow)" />
-            {/* Dot */}
-            <circle cx={city.x} cy={city.y} r="0.4" fill="#d4af37" filter="url(#glow)" />
-            {/* Code label */}
-            <text
-              x={city.x}
-              y={city.y - 2}
-              textAnchor="middle"
-              fill="#c9a84c"
-              fontSize="1.4"
-              fontFamily="Inter, sans-serif"
-              fontWeight="600"
-              letterSpacing="0.08em"
-              opacity="0.8"
-            >
-              {city.code}
-            </text>
-            {/* City name */}
-            <text
-              x={city.x}
-              y={city.y + 2.8}
-              textAnchor="middle"
-              fill="rgba(138,164,190,0.5)"
-              fontSize="1.1"
-              fontFamily="Inter, sans-serif"
-              fontWeight="400"
-            >
-              {city.name}
-            </text>
-          </g>
-        ))}
-      </svg>
+    <div ref={containerRef} className="relative w-full max-w-6xl mx-auto">
+      <canvas
+        ref={canvasRef}
+        className="w-full"
+        style={{ height: 'clamp(280px, 45vw, 500px)' }}
+      />
 
       {/* JETVORYX Select badge */}
       <div
-        className={`absolute bottom-4 left-4 sm:bottom-8 sm:left-8 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-        style={{ transitionDelay: '1.2s' }}
+        className={`absolute bottom-4 left-4 sm:bottom-6 sm:left-6 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        style={{ transitionDelay: '2s' }}
       >
         <div className="glass rounded-lg px-4 py-2.5 flex items-center gap-2.5 border border-white/5">
           <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
@@ -222,12 +289,12 @@ export default function GlobalRouteMap() {
 
       {/* Stats overlay */}
       <div
-        className={`absolute bottom-4 right-4 sm:bottom-8 sm:right-8 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-        style={{ transitionDelay: '1.4s' }}
+        className={`absolute bottom-4 right-4 sm:bottom-6 sm:right-6 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        style={{ transitionDelay: '2.5s' }}
       >
         <div className="glass rounded-lg px-4 py-2.5 border border-white/5 text-right">
-          <span className="text-xs text-white/30 block">Connected Destinations</span>
-          <span className="text-lg font-display font-bold text-gold">{cities.length}</span>
+          <span className="text-xs text-white/30 block">Global Network</span>
+          <span className="text-lg font-display font-bold text-gold">{cities.length} Hubs</span>
         </div>
       </div>
     </div>
