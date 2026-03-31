@@ -42,10 +42,13 @@ export default function AircraftDetailPage() {
   const toParam = searchParams.get('to');
   const dateParam = searchParams.get('date');
   const passengersParam = searchParams.get('passengers');
+  const tripTypeParam = searchParams.get('tripType');
+  const isRoundTrip = tripTypeParam === 'round_trip';
   if (fromParam) tripParams.set('from', fromParam);
   if (toParam) tripParams.set('to', toParam);
   if (dateParam) tripParams.set('date', dateParam);
   if (passengersParam) tripParams.set('passengers', passengersParam);
+  if (tripTypeParam) tripParams.set('tripType', tripTypeParam);
   const tripQuery = tripParams.toString();
 
   useEffect(() => {
@@ -194,11 +197,15 @@ export default function AircraftDetailPage() {
             <div className="lg:col-span-1">
               <div className="glass-card rounded-xl p-6 sticky top-28">
                 <div className="text-center mb-6">
-                  <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Starting From</p>
-                  <p className="font-display text-4xl font-bold text-gold-gradient">
-                    {formatCurrency(aircraft.displayPricePerHour)}
+                  <p className="text-xs text-white/40 uppercase tracking-wider mb-2">
+                    {isRoundTrip ? 'Round Trip' : 'Starting From'}
                   </p>
-                  <p className="text-sm text-white/40 mt-1">per flight hour</p>
+                  <p className="font-display text-4xl font-bold text-gold-gradient">
+                    {formatCurrency(isRoundTrip ? aircraft.displayPricePerHour * 2 : aircraft.displayPricePerHour)}
+                  </p>
+                  <p className="text-sm text-white/40 mt-1">
+                    per flight hour{isRoundTrip && ' (2x one-way)'}
+                  </p>
                 </div>
 
                 <div className="space-y-3 mb-6 text-sm">

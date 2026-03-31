@@ -10,12 +10,12 @@ const config: Config = {
     extend: {
       colors: {
         jet: {
-          black: '#0a0a0a',
-          dark: '#111111',
-          charcoal: '#1a1a1a',
-          slate: '#2a2a2a',
-          muted: '#666666',
-          light: '#999999',
+          black: '#06172b',
+          dark: '#0a1e38',
+          charcoal: '#0f2744',
+          slate: '#163252',
+          muted: '#5a7a9e',
+          light: '#8aa4be',
         },
         gold: {
           DEFAULT: '#c9a84c',
@@ -30,8 +30,8 @@ const config: Config = {
       },
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #c9a84c 0%, #d4af37 50%, #c9a84c 100%)',
-        'dark-gradient': 'linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)',
-        'card-gradient': 'linear-gradient(145deg, rgba(26,26,26,0.8) 0%, rgba(17,17,17,0.9) 100%)',
+        'dark-gradient': 'linear-gradient(180deg, #06172b 0%, #0f2744 100%)',
+        'card-gradient': 'linear-gradient(145deg, rgba(15,39,68,0.8) 0%, rgba(10,30,56,0.9) 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-out',

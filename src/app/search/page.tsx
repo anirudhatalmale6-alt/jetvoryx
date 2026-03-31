@@ -63,6 +63,8 @@ function SearchContent() {
   const to = searchParams.get('to');
   const date = searchParams.get('date');
   const passengersParam = searchParams.get('passengers');
+  const tripTypeParam = searchParams.get('tripType');
+  const isRoundTrip = tripTypeParam === 'round_trip';
 
   // Build trip query string to pass through to aircraft detail pages
   const tripParams = new URLSearchParams();
@@ -70,6 +72,7 @@ function SearchContent() {
   if (to) tripParams.set('to', to);
   if (date) tripParams.set('date', date);
   if (passengersParam) tripParams.set('passengers', passengersParam);
+  if (tripTypeParam) tripParams.set('tripType', tripTypeParam);
   const tripQuery = tripParams.toString();
 
   return (
@@ -93,6 +96,7 @@ function SearchContent() {
             </h1>
             <p className="text-white/40">
               {loading ? 'Searching...' : `${aircraft.length} aircraft available`}
+              {isRoundTrip && <span className="text-gold ml-2">Round Trip</span>}
             </p>
           </div>
 
@@ -138,7 +142,7 @@ function SearchContent() {
                     className="w-full bg-jet-charcoal border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold/30"
                   >
                     <option value="">Any</option>
-                    {[2,4,6,8,10,12,14].map(n => (
+                    {[2,4,6,8,10,12,14,18,20,25,30,40,50].map(n => (
                       <option key={n} value={n}>{n}+ passengers</option>
                     ))}
                   </select>
@@ -287,9 +291,14 @@ function SearchContent() {
                         </div>
 
                         <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                          <span className="text-gold font-semibold">
-                            {formatCurrency(a.displayPricePerHour)}/hr
-                          </span>
+                          <div>
+                            <span className="text-gold font-semibold">
+                              {formatCurrency(isRoundTrip ? a.displayPricePerHour * 2 : a.displayPricePerHour)}/hr
+                            </span>
+                            {isRoundTrip && (
+                              <span className="block text-[10px] text-white/30">Round Trip</span>
+                            )}
+                          </div>
                           <span className="text-xs text-white/30 group-hover:text-gold/60 transition-colors flex items-center gap-1">
                             View Details <ArrowRight className="h-3 w-3" />
                           </span>

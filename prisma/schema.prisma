@@ -74,8 +74,11 @@ model TripRequest {
   departureDate   DateTime
   returnDate      DateTime?
   passengers      Int
+  tripType        String        @default("one_way")
   aircraftId      String?
   aircraft        Aircraft?     @relation(fields: [aircraftId], references: [id])
+  userId          String?
+  user            User?         @relation("UserRequests", fields: [userId], references: [id])
   specialRequests String?
   estimatedPrice  Float?
   status          String        @default("pending")
@@ -86,6 +89,7 @@ model TripRequest {
 
   @@index([email])
   @@index([status])
+  @@index([userId])
 }
 
 model StatusEvent {
@@ -120,6 +124,18 @@ model ProviderConfig {
   aircraftCount Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model User {
+  id            String        @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String        @unique
+  phone         String?
+  password      String
+  requests      TripRequest[] @relation("UserRequests")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 model PaymentLink {

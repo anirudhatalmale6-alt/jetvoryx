@@ -2,19 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, Plane } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import { Menu, X, Plane, User, LogOut } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
+  const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const isLoggedIn = status === 'authenticated' && session?.user;
+  const userName = session?.user?.name || 'Account';
+  const isAdmin = (session?.user as Record<string, unknown>)?.role === 'admin';
 
   return (
     <>
@@ -47,9 +54,57 @@ export default function Header() {
               <Link href="/request" className="text-sm text-white/60 hover:text-white transition-colors">
                 Request a Flight
               </Link>
-              <Link href="/request">
-                <Button size="sm">Get Started</Button>
-              </Link>
+
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center">
+                      <User className="h-4 w-4 text-gold" />
+                    </div>
+                    <span className="hidden lg:inline">{userName.split(' ')[0]}</span>
+                  </button>
+
+                  {userMenuOpen && (
+                    <>
+                      <div className="fixed inset-0" onClick={() => setUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-12 w-56 glass-card rounded-xl p-2 border border-white/10 shadow-xl">
+                        <div className="px-3 py-2 border-b border-white/5 mb-1">
+                          <p className="text-sm font-medium text-white">{userName}</p>
+                          <p className="text-xs text-white/40">{session.user?.email}</p>
+                        </div>
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                          >
+                            Admin Panel
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => { signOut({ callbackUrl: '/' }); setUserMenuOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/60 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors">
+                    Sign In
+                  </Link>
+                  <Link href="/signup">
+                    <Button size="sm">Get Started</Button>
+                  </Link>
+                </div>
+              )}
             </nav>
 
             {/* Mobile Toggle */}
@@ -90,10 +145,42 @@ export default function Header() {
               >
                 Request a Flight
               </Link>
+
               <div className="pt-4 border-t border-white/10">
-                <Link href="/request" onClick={() => setMobileOpen(false)}>
-                  <Button className="w-full">Get Started</Button>
-                </Link>
+                {isLoggedIn ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center">
+                        <User className="h-5 w-5 text-gold" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">{userName}</p>
+                        <p className="text-xs text-white/40">{session?.user?.email}</p>
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <Link href="/admin" onClick={() => setMobileOpen(false)}>
+                        <Button variant="outline" className="w-full mb-2">Admin Panel</Button>
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => { signOut({ callbackUrl: '/' }); setMobileOpen(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-red-400 border border-red-400/20 rounded-lg hover:bg-red-400/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" className="w-full mb-2">Sign In</Button>
+                    </Link>
+                    <Link href="/signup" onClick={() => setMobileOpen(false)}>
+                      <Button className="w-full">Get Started</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>

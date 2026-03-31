@@ -16,7 +16,7 @@ html {
 
 body {
   color: #ededed;
-  background: #0a0a0a;
+  background: #06172b;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -28,11 +28,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: #06172b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: #163252;
   border-radius: 3px;
 }
 
@@ -56,21 +56,21 @@ body {
   }
 
   .glass {
-    background: rgba(26, 26, 26, 0.6);
+    background: rgba(15, 39, 68, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(201, 168, 76, 0.1);
+    border: 1px solid rgba(201, 168, 76, 0.12);
   }
 
   .glass-card {
-    background: rgba(26, 26, 26, 0.4);
+    background: rgba(15, 39, 68, 0.5);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .shimmer-bg {
-    background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+    background: linear-gradient(90deg, #0f2744 25%, #163252 50%, #0f2744 75%);
     background-size: 200% 100%;
   }
 }
@@ -84,7 +84,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #1a1a1a inset;
+  -webkit-box-shadow: 0 0 0px 1000px #0f2744 inset;
   -webkit-text-fill-color: #ededed;
   transition: background-color 5000s ease-in-out 0s;
 }

@@ -31,6 +31,12 @@ export default function Footer() {
               <Link href="/request" className="text-sm text-white/40 hover:text-gold transition-colors">
                 Request a Flight
               </Link>
+              <Link href="/terms" className="text-sm text-white/40 hover:text-gold transition-colors">
+                Terms of Service
+              </Link>
+              <Link href="/privacy" className="text-sm text-white/40 hover:text-gold transition-colors">
+                Privacy Policy
+              </Link>
             </nav>
           </div>
 
