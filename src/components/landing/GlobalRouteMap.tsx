@@ -1,63 +1,73 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface City {
   name: string;
-  code: string;
   lat: number;
   lng: number;
 }
 
 const cities: City[] = [
-  { name: 'New York', code: 'JFK', lat: 40.64, lng: -73.78 },
-  { name: 'London', code: 'LHR', lat: 51.47, lng: -0.46 },
-  { name: 'Paris', code: 'CDG', lat: 49.01, lng: 2.55 },
-  { name: 'Dubai', code: 'DXB', lat: 25.25, lng: 55.36 },
-  { name: 'Singapore', code: 'SIN', lat: 1.35, lng: 103.99 },
-  { name: 'Hong Kong', code: 'HKG', lat: 22.31, lng: 113.91 },
-  { name: 'Tokyo', code: 'NRT', lat: 35.76, lng: 140.39 },
-  { name: 'Sydney', code: 'SYD', lat: -33.95, lng: 151.18 },
-  { name: 'São Paulo', code: 'GRU', lat: -23.43, lng: -46.47 },
-  { name: 'Los Angeles', code: 'LAX', lat: 33.94, lng: -118.41 },
-  { name: 'Miami', code: 'MIA', lat: 25.80, lng: -80.29 },
-  { name: 'Cape Town', code: 'CPT', lat: -33.96, lng: 18.60 },
-  { name: 'Moscow', code: 'SVO', lat: 55.97, lng: 37.41 },
-  { name: 'Mumbai', code: 'BOM', lat: 19.09, lng: 72.87 },
-  { name: 'Geneva', code: 'GVA', lat: 46.24, lng: 6.11 },
-  { name: 'Jeddah', code: 'JED', lat: 21.68, lng: 39.16 },
+  { name: 'NEW YORK', lat: 40.7, lng: -74.0 },
+  { name: 'LONDON', lat: 51.5, lng: -0.1 },
+  { name: 'PARIS', lat: 48.9, lng: 2.3 },
+  { name: 'DUBAI', lat: 25.3, lng: 55.3 },
+  { name: 'SINGAPORE', lat: 1.3, lng: 103.8 },
+  { name: 'HONG KONG', lat: 22.3, lng: 114.2 },
+  { name: 'TOKYO', lat: 35.7, lng: 139.7 },
+  { name: 'SYDNEY', lat: -33.9, lng: 151.2 },
+  { name: 'SÃO PAULO', lat: -23.5, lng: -46.6 },
+  { name: 'LOS ANGELES', lat: 34.1, lng: -118.2 },
+  { name: 'MIAMI', lat: 25.8, lng: -80.2 },
+  { name: 'CAPE TOWN', lat: -33.9, lng: 18.4 },
+  { name: 'MOSCOW', lat: 55.8, lng: 37.6 },
+  { name: 'DELHI', lat: 28.6, lng: 77.2 },
+  { name: 'SHANGHAI', lat: 31.2, lng: 121.5 },
+  { name: 'ZURICH', lat: 47.4, lng: 8.5 },
 ];
 
-const routes: [number, number][] = [
-  [0, 1], [0, 2], [0, 9], [0, 10], [0, 8],
-  [1, 2], [1, 3], [1, 12], [1, 6], [1, 14],
-  [2, 3], [2, 11], [2, 15],
-  [3, 4], [3, 13], [3, 5], [3, 15],
-  [4, 5], [4, 7], [4, 13],
-  [5, 6], [5, 7],
-  [6, 7],
-  [8, 10], [8, 11],
-  [9, 6], [9, 10],
-  [12, 3], [12, 5],
-  [13, 4], [13, 15],
-  [14, 3],
-];
-
-// Mercator projection
-function project(lat: number, lng: number): [number, number] {
-  const x = (lng + 180) * (1000 / 360);
-  const latRad = (lat * Math.PI) / 180;
-  const mercN = Math.log(Math.tan(Math.PI / 4 + latRad / 2));
-  const y = 500 / 2 - (500 * mercN) / (2 * Math.PI);
+// Equirectangular projection
+function toXY(lat: number, lng: number, w: number, h: number): [number, number] {
+  const x = ((lng + 180) / 360) * w;
+  const y = ((90 - lat) / 180) * h;
   return [x, y];
 }
 
+// Simplified but recognizable continent paths (SVG path data in equirectangular projection, 0-1000 x 0-500)
+const continents = [
+  // North America
+  'M65,95 L80,85 L95,80 L115,78 L140,82 L160,90 L175,100 L185,110 L195,120 L200,130 L195,140 L185,155 L180,165 L175,175 L165,180 L155,182 L148,178 L142,172 L135,175 L128,180 L120,182 L115,178 L108,172 L100,175 L95,180 L88,175 L82,168 L78,160 L72,155 L68,148 L62,140 L58,130 L55,120 L52,112 L55,105 L60,98 Z M170,78 L180,72 L195,72 L210,76 L215,82 L208,88 L198,92 L185,90 L178,85 Z',
+  // South America
+  'M175,195 L182,190 L192,192 L200,198 L208,208 L215,218 L220,230 L222,245 L218,260 L212,275 L205,288 L198,300 L190,310 L182,315 L175,310 L168,298 L162,285 L158,270 L155,255 L152,240 L152,225 L155,215 L160,205 L168,198 Z',
+  // Europe
+  'M455,78 L462,72 L475,70 L490,72 L505,76 L518,82 L528,90 L530,98 L525,108 L518,115 L510,122 L502,128 L495,125 L488,120 L480,118 L472,120 L465,115 L458,108 L452,100 L448,92 L450,85 Z',
+  // Africa
+  'M455,135 L465,128 L478,130 L492,135 L505,142 L515,152 L522,165 L528,180 L530,198 L528,218 L522,238 L515,258 L508,275 L498,290 L488,300 L478,305 L468,300 L458,288 L448,272 L440,255 L435,238 L432,218 L432,198 L435,180 L440,165 L448,150 Z',
+  // Asia
+  'M530,65 L548,58 L568,55 L592,55 L618,60 L642,68 L665,78 L682,90 L692,105 L688,118 L680,132 L668,145 L652,155 L635,162 L618,168 L600,172 L582,170 L565,165 L550,158 L538,148 L530,138 L525,125 L522,112 L520,98 L522,85 L528,75 Z',
+  // Middle East / India subcontinent
+  'M548,135 L562,128 L578,132 L588,140 L595,152 L598,165 L595,178 L588,188 L578,195 L568,192 L558,185 L550,175 L545,162 L542,150 L545,142 Z',
+  // Southeast Asia / Indonesia
+  'M618,172 L632,168 L648,172 L658,180 L662,192 L658,205 L648,215 L638,218 L628,215 L618,208 L612,198 L612,185 Z',
+  // Australia
+  'M668,260 L685,252 L705,250 L725,255 L738,265 L742,280 L738,295 L728,308 L715,315 L700,318 L685,312 L672,302 L665,288 L662,275 Z',
+  // Japan
+  'M692,100 L698,92 L705,95 L708,105 L705,115 L698,122 L692,118 L690,110 Z',
+  // Greenland
+  'M268,42 L282,35 L298,38 L310,45 L312,55 L305,65 L292,68 L278,65 L270,58 L265,50 Z',
+  // UK/Ireland
+  'M448,78 L455,72 L462,75 L460,85 L455,90 L448,88 Z',
+  // Madagascar
+  'M545,285 L550,278 L555,282 L555,295 L550,302 L545,298 Z',
+  // New Zealand
+  'M748,310 L752,305 L758,308 L758,320 L752,328 L748,322 Z',
+];
+
 export default function GlobalRouteMap() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const animProgress = useRef(0);
-  const animFrame = useRef(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -68,213 +78,83 @@ export default function GlobalRouteMap() {
     return () => observer.disconnect();
   }, []);
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    const w = rect.width;
-    const h = rect.height;
-
-    ctx.clearRect(0, 0, w, h);
-
-    // Scale and offset for the map
-    const mapScale = w / 1000;
-    const mapOffsetY = -40 * mapScale;
-
-    const proj = (lat: number, lng: number): [number, number] => {
-      const [px, py] = project(lat, lng);
-      return [px * mapScale, py * mapScale + mapOffsetY];
-    };
-
-    // Draw grid
-    ctx.strokeStyle = 'rgba(138, 164, 190, 0.04)';
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= 36; i++) {
-      const x = (i / 36) * w;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    for (let i = 0; i <= 18; i++) {
-      const y = (i / 18) * h;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
-    // Draw world land masses using dot matrix style
-    const landCoords = [
-      // North America outline
-      ...[[-10, 60], [-20, 55], [-30, 50], [-40, 48], [-55, 47], [-65, 43], [-70, 40], [-75, 38], [-80, 35], [-82, 30], [-85, 28], [-90, 30], [-95, 30], [-100, 32], [-105, 35], [-110, 32], [-115, 34], [-118, 38], [-122, 40], [-125, 44], [-125, 48], [-130, 55], [-140, 60], [-150, 60], [-160, 62], [-165, 65], [-160, 70], [-140, 72], [-120, 70], [-100, 68], [-80, 65], [-65, 60], [-55, 50], [-40, 48]].map(([lng, lat]) => ({ lat, lng })),
-      // Europe
-      ...[[-10, 52], [0, 51], [5, 52], [10, 55], [15, 55], [20, 54], [25, 55], [30, 60], [35, 58], [30, 50], [25, 47], [20, 45], [15, 45], [10, 44], [5, 46], [0, 48], [-5, 48], [-10, 44]].map(([lng, lat]) => ({ lat, lng })),
-      // Africa
-      ...[[-15, 30], [-5, 35], [10, 37], [15, 33], [25, 32], [30, 30], [33, 28], [35, 22], [40, 12], [42, 5], [40, -2], [35, -10], [30, -20], [25, -30], [20, -35], [15, -30], [12, -20], [10, -5], [5, 5], [0, 5], [-5, 10], [-15, 15], [-17, 20], [-15, 25]].map(([lng, lat]) => ({ lat, lng })),
-      // Asia
-      ...[[35, 35], [40, 38], [45, 40], [50, 38], [55, 35], [60, 30], [65, 25], [70, 20], [75, 15], [80, 10], [85, 15], [90, 22], [95, 18], [100, 15], [105, 10], [108, 15], [110, 20], [115, 22], [120, 25], [125, 30], [130, 35], [135, 38], [140, 40], [142, 45], [140, 50], [135, 55], [120, 55], [100, 55], [85, 55], [75, 52], [65, 48], [55, 45], [45, 42], [40, 40]].map(([lng, lat]) => ({ lat, lng })),
-      // South America
-      ...[[-80, 10], [-75, 5], [-70, -5], [-65, -15], [-60, -20], [-55, -25], [-50, -25], [-45, -23], [-40, -15], [-38, -10], [-35, -5], [-50, 5], [-60, 8], [-70, 10], [-75, 12]].map(([lng, lat]) => ({ lat, lng })),
-      // Australia
-      ...[[115, -15], [120, -15], [130, -15], [140, -18], [150, -25], [153, -28], [150, -35], [140, -38], [130, -35], [120, -30], [115, -25], [115, -20]].map(([lng, lat]) => ({ lat, lng })),
-    ];
-
-    // Draw dots for land masses
-    ctx.fillStyle = 'rgba(138, 164, 190, 0.08)';
-    const dotSpacing = Math.max(8, 12 * mapScale);
-    for (let x = 0; x < w; x += dotSpacing) {
-      for (let y = 0; y < h; y += dotSpacing) {
-        // Convert screen coords back to lat/lng
-        const lng = (x / mapScale) * 360 / 1000 - 180;
-        const mercY = ((500 / 2 - (y - mapOffsetY) / mapScale) * 2 * Math.PI) / 500;
-        const lat = (2 * Math.atan(Math.exp(mercY)) - Math.PI / 2) * 180 / Math.PI;
-
-        // Simple point-in-region check
-        let isLand = false;
-        for (const coord of landCoords) {
-          const dist = Math.sqrt(Math.pow(lat - coord.lat, 2) + Math.pow(lng - coord.lng, 2));
-          if (dist < 8) {
-            isLand = true;
-            break;
-          }
-        }
-        if (isLand) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-
-    // Animated progress
-    const progress = animProgress.current;
-
-    // Draw routes
-    routes.forEach(([a, b], i) => {
-      const routeProgress = Math.max(0, Math.min(1, (progress - i * 0.02) / 0.6));
-      if (routeProgress <= 0) return;
-
-      const [x1, y1] = proj(cities[a].lat, cities[a].lng);
-      const [x2, y2] = proj(cities[b].lat, cities[b].lng);
-
-      const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-      gradient.addColorStop(0, 'rgba(201, 168, 76, 0.15)');
-      gradient.addColorStop(0.5, 'rgba(212, 175, 55, 0.35)');
-      gradient.addColorStop(1, 'rgba(201, 168, 76, 0.15)');
-
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-
-      // Draw arc
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const bulge = Math.min(dist * 0.2, 40);
-      const mx = (x1 + x2) / 2 - (dy / dist) * bulge;
-      const my = (y1 + y2) / 2 + (dx / dist) * bulge;
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-
-      // Partial draw based on progress
-      const steps = 50;
-      const drawSteps = Math.floor(steps * routeProgress);
-      for (let s = 1; s <= drawSteps; s++) {
-        const t = s / steps;
-        const px = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * mx + t * t * x2;
-        const py = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * my + t * t * y2;
-        ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-    });
-
-    // Draw city markers
-    cities.forEach((city, i) => {
-      const cityProgress = Math.max(0, Math.min(1, (progress - 0.2) / 0.5));
-      if (cityProgress <= 0) return;
-
-      const [cx, cy] = proj(city.lat, city.lng);
-
-      // Glow
-      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 8 * cityProgress);
-      grd.addColorStop(0, `rgba(212, 175, 55, ${0.3 * cityProgress})`);
-      grd.addColorStop(1, 'rgba(212, 175, 55, 0)');
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 8 * cityProgress, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Pulse ring
-      ctx.strokeStyle = `rgba(201, 168, 76, ${0.2 * cityProgress})`;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 5 + Math.sin(Date.now() / 800 + i) * 2, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Dot
-      ctx.fillStyle = `rgba(212, 175, 55, ${cityProgress})`;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Code label
-      ctx.font = `bold ${Math.max(9, 11 * mapScale)}px Inter, system-ui, sans-serif`;
-      ctx.fillStyle = `rgba(201, 168, 76, ${0.9 * cityProgress})`;
-      ctx.textAlign = 'center';
-      ctx.fillText(city.code, cx, cy - 10);
-
-      // City name
-      ctx.font = `${Math.max(7, 9 * mapScale)}px Inter, system-ui, sans-serif`;
-      ctx.fillStyle = `rgba(138, 164, 190, ${0.5 * cityProgress})`;
-      ctx.fillText(city.name, cx, cy + 16);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    const startTime = Date.now();
-    const duration = 3000;
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      animProgress.current = Math.min(1, elapsed / duration);
-      draw();
-      if (animProgress.current < 1) {
-        animFrame.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animFrame.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animFrame.current);
-  }, [visible, draw]);
-
-  // Resize handler
-  useEffect(() => {
-    const handleResize = () => {
-      if (visible) draw();
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [visible, draw]);
+  const svgW = 1000;
+  const svgH = 500;
 
   return (
     <div ref={containerRef} className="relative w-full max-w-6xl mx-auto">
-      <canvas
-        ref={canvasRef}
-        className="w-full"
-        style={{ height: 'clamp(280px, 45vw, 500px)' }}
-      />
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${svgW} ${svgH}`}
+        className="w-full h-auto"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Background */}
+        <rect width={svgW} height={svgH} fill="transparent" />
+
+        {/* Continent shapes - filled, no stroke */}
+        <g>
+          {continents.map((d, i) => (
+            <path
+              key={i}
+              d={d}
+              fill="rgba(138, 164, 190, 0.12)"
+              stroke="rgba(138, 164, 190, 0.06)"
+              strokeWidth="0.5"
+              opacity={visible ? 1 : 0}
+              style={{ transition: `opacity 1.2s ease ${i * 0.08}s` }}
+            />
+          ))}
+        </g>
+
+        {/* City dots and labels */}
+        {cities.map((city, i) => {
+          const [cx, cy] = toXY(city.lat, city.lng, svgW, svgH);
+          return (
+            <g
+              key={i}
+              opacity={visible ? 1 : 0}
+              style={{ transition: `opacity 0.8s ease ${0.8 + i * 0.1}s` }}
+            >
+              {/* Outer glow */}
+              <circle
+                cx={cx}
+                cy={cy}
+                r="6"
+                fill="rgba(201, 168, 76, 0.12)"
+              />
+              {/* Dot */}
+              <circle
+                cx={cx}
+                cy={cy}
+                r="3"
+                fill="#c9a84c"
+              />
+              {/* Inner bright dot */}
+              <circle
+                cx={cx}
+                cy={cy}
+                r="1.2"
+                fill="#fff"
+                opacity="0.6"
+              />
+              {/* City name */}
+              <text
+                x={cx}
+                y={cy - 10}
+                textAnchor="middle"
+                fill="rgba(255, 255, 255, 0.55)"
+                fontSize="8"
+                fontFamily="Inter, system-ui, sans-serif"
+                fontWeight="500"
+                letterSpacing="1.5"
+              >
+                {city.name}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
 
       {/* JETVORYX Select badge */}
       <div
@@ -282,19 +162,8 @@ export default function GlobalRouteMap() {
         style={{ transitionDelay: '2s' }}
       >
         <div className="glass rounded-lg px-4 py-2.5 flex items-center gap-2.5 border border-white/5">
-          <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
-          <span className="text-xs sm:text-sm font-semibold text-gold tracking-wider uppercase">JETVORYX Select</span>
-        </div>
-      </div>
-
-      {/* Stats overlay */}
-      <div
-        className={`absolute bottom-4 right-4 sm:bottom-6 sm:right-6 transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-        style={{ transitionDelay: '2.5s' }}
-      >
-        <div className="glass rounded-lg px-4 py-2.5 border border-white/5 text-right">
-          <span className="text-xs text-white/30 block">Global Network</span>
-          <span className="text-lg font-display font-bold text-gold">{cities.length} Hubs</span>
+          <div className="w-2.5 h-2.5 rounded-sm bg-gold" />
+          <span className="text-xs sm:text-sm font-semibold text-gold tracking-widest uppercase">JETVORYX Select</span>
         </div>
       </div>
     </div>
