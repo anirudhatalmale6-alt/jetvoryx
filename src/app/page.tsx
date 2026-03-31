@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plane, Search, Shield, ArrowRight, Users, Calendar, Globe, Crown, Cpu } from 'lucide-react';
@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import AirportSelect from '@/components/ui/AirportSelect';
 import GlobalRouteMap from '@/components/landing/GlobalRouteMap';
+import FlightRoute from '@/components/landing/FlightRoute';
 import { formatCurrency } from '@/lib/utils';
 import type { Aircraft } from '@/types';
 
@@ -49,6 +50,16 @@ export default function HomePage() {
   const handleRequestFlight = () => {
     router.push(`/request?${buildSearchParams()}`);
   };
+
+  // Auto scroll to featured section when search form is filled
+  const featuredRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (from && to && featuredRef.current) {
+      setTimeout(() => {
+        featuredRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 600);
+    }
+  }, [from, to]);
 
   return (
     <div className="min-h-screen bg-jet-black">
@@ -174,6 +185,9 @@ export default function HomePage() {
                   Request a Flight
                 </Button>
               </div>
+
+              {/* Animated flight route between selected airports */}
+              <FlightRoute from={from} to={to} />
             </form>
           </div>
         </div>
@@ -187,7 +201,7 @@ export default function HomePage() {
 
       {/* Featured Fleet */}
       {featured.length > 0 && (
-        <section className="py-24 bg-jet-black">
+        <section ref={featuredRef} className="py-24 bg-jet-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <Badge variant="outline" className="mb-4">Featured Fleet</Badge>
