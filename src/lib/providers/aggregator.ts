@@ -13,6 +13,10 @@ import { GlobalJetProvider } from './globaljet-provider';
 import { AirCharterServiceProvider } from './aircharterservice-provider';
 import { JetSetGoProvider } from './jetsetgo-provider';
 import { AirXProvider } from './airx-provider';
+import { NetJetsProvider } from './netjets-provider';
+import { FlexjetProvider } from './flexjet-provider';
+import { VincentJetsProvider } from './vincentjets-provider';
+import { ChapmanFreebornProvider } from './chapmanfreeborn-provider';
 
 // Registry of all providers
 const providers: AircraftProvider[] = [
@@ -29,6 +33,10 @@ const providers: AircraftProvider[] = [
   new AirCharterServiceProvider(),
   new JetSetGoProvider(),
   new AirXProvider(),
+  new NetJetsProvider(),
+  new FlexjetProvider(),
+  new VincentJetsProvider(),
+  new ChapmanFreebornProvider(),
 ];
 
 export function getProviders(): AircraftProvider[] {
